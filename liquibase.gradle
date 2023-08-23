@@ -16,13 +16,14 @@ dependencies {
 apply plugin: "org.liquibase.gradle"
 
 
-import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 // 현재 날짜 가져오기
-LocalDate currentDate = LocalDate.now()
-DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd")
+LocalDateTime currentDate = LocalDateTime.now()
+DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd-HHmm")
 String formattedDate = currentDate.format(formatter)
+
 
 // gradle.properties 파일로부터 값 주입받기
 def db_url = project.findProperty('database.url')
