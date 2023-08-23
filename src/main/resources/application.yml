@@ -1,0 +1,10 @@
+spring:
+  jpa:
+    properties:
+      hibernate:
+        jdbc:
+          lob:
+            non-contextual-creation: true
+    generate-ddl: false
+    hibernate:
+      ddl-auto: none

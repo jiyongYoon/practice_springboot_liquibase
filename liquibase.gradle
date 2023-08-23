@@ -1,0 +1,74 @@
+dependencies {
+    //liquibase
+    liquibaseRuntime 'org.liquibase:liquibase-core:4.6.1'
+    liquibaseRuntime 'org.liquibase:liquibase-groovy-dsl:3.0.2'
+    liquibaseRuntime 'info.picocli:picocli:4.6.2'
+    liquibaseRuntime 'org.postgresql:postgresql'
+    liquibaseRuntime group: 'javax.xml.bind', name: 'jaxb-api', version: '2.3.1'
+    liquibaseRuntime "ch.qos.logback:logback-core"
+    liquibaseRuntime "ch.qos.logback:logback-classic"
+    liquibaseRuntime 'org.springframework.boot:spring-boot-starter-data-jpa'
+    liquibaseRuntime 'org.liquibase.ext:liquibase-hibernate5:4.6.1'
+
+    liquibaseRuntime sourceSets.main.output
+}
+
+apply plugin: "org.liquibase.gradle"
+
+
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+
+// 현재 날짜 가져오기
+LocalDate currentDate = LocalDate.now()
+DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd")
+String formattedDate = currentDate.format(formatter)
+
+// gradle.properties 파일로부터 값 주입받기
+def db_url = project.findProperty('database.url')
+def db_username = project.findProperty('database.username')
+def db_password = project.findProperty('database.password')
+def domain_url = project.findProperty('domain.url')
+
+// 명령어에 따른 분리 Settings 파일 변경 필요
+project.ext.liquibaseTaskName = gradle.startParameter.taskNames
+
+println(project.ext.liquibaseTaskName)
+
+liquibase {
+
+    activities {
+        main {
+            switch (project.ext.liquibaseTaskName[0]) {
+                // plugin 명령어들
+                case "update":
+                    changelogFile "src/main/resources/db/changelog/db.changelog-master.xml"
+                    break;
+                case "diffChangeLog":
+                    changelogFile "src/main/resources/db/changelog/db.changelog-${formattedDate}.sql"
+                    break;
+                case "generateChangelog":
+                    changelogFile "src/main/resources/db/changelog/db.changelog-init.sql"
+                    break;
+                case "snapshot":
+                    snapshotFormat "json"
+                    outputFile "src/main/resources/db/changelog/snapshot.json"
+                default:
+                    changelogFile "src/main/resources/db/changelog/db.changelog-master.xml"
+                    break;
+            }
+            url db_url
+            username db_username
+            password db_password
+            logLevel "info"
+            driver "org.postgresql.Driver"
+            referenceUrl "hibernate:spring:" + domain_url + "?" +
+                    "hibernate.implicit_naming_strategy=org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy&" +
+                    "hibernate.physical_naming_strategy=org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy&" +
+                    "dialect=org.hibernate.dialect.PostgreSQL94Dialect"
+            referenceDriver "liquibase.ext.hibernate.database.connection.HibernateDriver"
+        }
+
+    }
+    runList = 'main'
+}

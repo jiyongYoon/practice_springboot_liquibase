@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '2.7.14'
     id 'io.spring.dependency-management' version '1.0.15.RELEASE'
+    id 'org.liquibase.gradle' version '2.1.0'
 }
 
 group = 'com.example'
@@ -11,7 +12,10 @@ java {
     sourceCompatibility = '1.8'
 }
 
+apply from: 'liquibase.gradle'
+
 configurations {
+    liquibaseRuntime.extendsFrom runtimeClasspath
     compileOnly {
         extendsFrom annotationProcessor
     }
