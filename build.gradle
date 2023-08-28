@@ -38,3 +38,8 @@ dependencies {
 tasks.named('test') {
     useJUnitPlatform()
 }
+
+// application 중복파일 처리에 대한 전략
+processResources {
+    duplicatesStrategy = 'include'
+}

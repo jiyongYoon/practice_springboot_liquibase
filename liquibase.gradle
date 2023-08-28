@@ -15,6 +15,38 @@ dependencies {
 
 apply plugin: "org.liquibase.gradle"
 
+// gradle 명령어 -Pprofile={$profile} (local / prod 등등)
+ext.profile = project.hasProperty('profile') ? profile : 'local'
+
+// 파일에서 properties 추출
+def getPropertiesByLoadFile(profileName) {
+    def properties = new Properties()
+    def propertyFile = file("gradle-properties/gradle-${profileName}.properties")
+    if (propertyFile.exists()) {
+        properties.load(new FileInputStream(propertyFile))
+    }
+    return properties
+}
+
+// property value 추출
+static def getProperty(key, baseProperties, profileProperties) {
+    if (profileProperties.containsKey(key)) {
+        return profileProperties.getProperty(key)
+    } else if (baseProperties.containsKey(key)) {
+        return baseProperties.getProperty(key)
+    } else {
+        return null
+    }
+}
+
+sourceSets {
+    main {
+        resources {
+            srcDirs "src/main/resources",
+                    "src/main/resources/profile"
+        }
+    }
+}
 
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -24,12 +56,14 @@ LocalDateTime currentDate = LocalDateTime.now()
 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd-HHmm")
 String formattedDate = currentDate.format(formatter)
 
+def baseProperties = getPropertiesByLoadFile('base')
+def profileProperties = getPropertiesByLoadFile(ext.profile)
 
-// gradle.properties 파일로부터 값 주입받기
-def db_url = project.findProperty('database.url')
-def db_username = project.findProperty('database.username')
-def db_password = project.findProperty('database.password')
-def domain_url = project.findProperty('domain.url')
+// gradle-local.properties 파일로부터 값 주입받기
+def db_url = getProperty('database.url', baseProperties, profileProperties)
+def db_username = getProperty('database.username', baseProperties, profileProperties)
+def db_password = getProperty('database.password', baseProperties, profileProperties)
+def domain_url = getProperty('domain.url', baseProperties, profileProperties)
 
 // 명령어에 따른 분리 Settings 파일 변경 필요
 project.ext.liquibaseTaskName = gradle.startParameter.taskNames
@@ -37,7 +71,6 @@ project.ext.liquibaseTaskName = gradle.startParameter.taskNames
 println(project.ext.liquibaseTaskName)
 
 liquibase {
-
     activities {
         main {
             switch (project.ext.liquibaseTaskName[0]) {
@@ -69,7 +102,6 @@ liquibase {
                     "dialect=org.hibernate.dialect.PostgreSQL94Dialect"
             referenceDriver "liquibase.ext.hibernate.database.connection.HibernateDriver"
         }
-
     }
     runList = 'main'
 }
